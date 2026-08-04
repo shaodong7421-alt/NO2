@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>成都一周天气</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17202a;
+      --muted: #65717f;
+      --line: rgba(23, 32, 42, 0.12);
+      --panel: rgba(255, 255, 255, 0.78);
+      --panel-strong: rgba(255, 255, 255, 0.92);
+      --accent: #e55f39;
+      --accent-2: #1f8a70;
+      --sky: #77b7d9;
+      --rain: #326d9b;
+      --shadow: 0 22px 70px rgba(24, 43, 62, 0.18);
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(165deg, rgba(244, 208, 111, 0.7) 0%, rgba(119, 183, 217, 0.72) 42%, rgba(111, 163, 135, 0.74) 100%),
+        url("https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1800&q=80") center/cover fixed;
+    }
+
+    body::before {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      content: "";
+      background: rgba(255, 249, 236, 0.34);
+      backdrop-filter: blur(2px);
+    }
+
+    main {
+      width: min(1180px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 44px 0;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr);
+      gap: 24px;
+      align-items: stretch;
+      min-height: 330px;
+    }
+
+    .summary,
+    .now-panel,
+    .forecast-card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .summary {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 330px;
+      padding: 32px;
+      border-radius: 8px;
+    }
+
+    .eyebrow {
+      margin: 0 0 16px;
+      color: #30485b;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 760px;
+      margin: 0;
+      font-size: clamp(42px, 8vw, 88px);
+      line-height: 0.95;
+      letter-spacing: 0;
+    }
+
+    .summary-text {
+      max-width: 680px;
+      margin: 22px 0 0;
+      color: #2d4050;
+      font-size: 18px;
+      line-height: 1.7;
+    }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 34px;
+      padding: 7px 12px;
+      border: 1px solid rgba(23, 32, 42, 0.11);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.56);
+      color: #263a4c;
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .now-panel {
+      display: grid;
+      align-content: space-between;
+      min-height: 330px;
+      padding: 28px;
+      border-radius: 8px;
+    }
+
+    .now-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .label {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .now-temp {
+      margin: 0;
+      font-size: clamp(56px, 10vw, 94px);
+      font-weight: 800;
+      line-height: 0.95;
+    }
+
+    .weather-icon {
+      display: grid;
+      place-items: center;
+      width: 86px;
+      height: 86px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.6);
+      font-size: 44px;
+      box-shadow: inset 0 0 0 1px rgba(23, 32, 42, 0.08);
+    }
+
+    .now-desc {
+      margin: 10px 0 0;
+      color: #314657;
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .stat {
+      min-height: 82px;
+      padding: 14px;
+      border: 1px solid rgba(23, 32, 42, 0.1);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 20px;
+      line-height: 1.15;
+    }
+
+    .forecast {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .forecast-card {
+      display: flex;
+      min-height: 250px;
+      padding: 18px;
+      border-radius: 8px;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+
+    .day {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .day-name {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .date {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .mini-icon {
+      font-size: 30px;
+      line-height: 1;
+    }
+
+    .temps {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin: 18px 0 0;
+    }
+
+    .high {
+      color: var(--accent);
+      font-size: 34px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .low {
+      color: #4f697a;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .desc {
+      min-height: 48px;
+      margin: 14px 0 0;
+      color: #33495d;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .rain-row {
+      margin-top: 18px;
+    }
+
+    .rain-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .bar {
+      height: 8px;
+      margin-top: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(50, 109, 155, 0.15);
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--rain), var(--accent-2));
+    }
+
+    .footer-note {
+      margin: 18px 0 0;
+      color: #405469;
+      font-size: 13px;
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .loading {
+      opacity: 0.68;
+    }
+
+    @media (max-width: 980px) {
+      main {
+        width: min(720px, calc(100% - 28px));
+        padding: 28px 0;
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .forecast {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 560px) {
+      main {
+        width: min(100% - 24px, 460px);
+        padding: 18px 0;
+      }
+
+      .summary,
+      .now-panel {
+        min-height: auto;
+        padding: 22px;
+      }
+
+      .now-top {
+        align-items: center;
+      }
+
+      .weather-icon {
+        width: 66px;
+        height: 66px;
+        font-size: 34px;
+      }
+
+      .stat-grid,
+      .forecast {
+        grid-template-columns: 1fr;
+      }
+
+      .forecast-card {
+        min-height: 210px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero" aria-label="成都天气概览">
+      <div class="summary">
+        <div>
+          <p class="eyebrow">Chengdu Weekly Forecast</p>
+          <h1>成都一周天气</h1>
+          <p class="summary-text" id="summaryText">正在读取成都未来 7 天天气。近期高温和阵雨常常交替出现，出门记得留意午后雷阵雨。</p>
+        </div>
+        <div class="meta-row">
+          <span class="chip">📍 成都</span>
+          <span class="chip" id="updatedAt">更新时间 --</span>
+          <span class="chip" id="sourceTag">在线天气</span>
+        </div>
+      </div>
+
+      <aside class="now-panel" aria-label="今日天气">
+        <div class="now-top">
+          <div>
+            <p class="label">今日体感</p>
+            <p class="now-temp" id="nowTemp">--°</p>
+            <p class="now-desc" id="nowDesc">加载中</p>
+          </div>
+          <div class="weather-icon" id="nowIcon" aria-hidden="true">⛅</div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat">
+            <p class="label">最高</p>
+            <strong id="todayHigh">--°C</strong>
+          </div>
+          <div class="stat">
+            <p class="label">最低</p>
+            <strong id="todayLow">--°C</strong>
+          </div>
+          <div class="stat">
+            <p class="label">降水</p>
+            <strong id="todayRain">--%</strong>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="forecast loading" id="forecast" aria-label="7 日预报"></section>
+    <p class="footer-note" id="footerNote">数据源：Open-Meteo，页面内置备用预报。</p>
+  </main>
+
+  <script>
+    const fallbackForecast = [
+      { date: "2026-08-04", code: 51, high: 31, low: 23, rain: 89, text: "小毛毛雨，出行带伞" },
+      { date: "2026-08-05", code: 95, high: 31, low: 24, rain: 83, text: "雷阵雨，空气潮湿" },
+      { date: "2026-08-06", code: 96, high: 30, low: 22, rain: 75, text: "雷雨概率较高" },
+      { date: "2026-08-07", code: 95, high: 29, low: 22, rain: 59, text: "雷阵雨，体感稍凉" },
+      { date: "2026-08-08", code: 96, high: 31, low: 24, rain: 69, text: "雷雨反复，留意路况" },
+      { date: "2026-08-09", code: 51, high: 32, low: 24, rain: 86, text: "小毛毛雨，闷热" },
+      { date: "2026-08-10", code: 51, high: 32, low: 25, rain: 65, text: "小毛毛雨，湿度偏高" }
+    ];
+
+    const weatherMap = new Map([
+      [0, ["☀️", "晴朗"]],
+      [1, ["🌤️", "大部晴朗"]],
+      [2, ["⛅", "局部多云"]],
+      [3, ["☁️", "阴天"]],
+      [45, ["🌫️", "有雾"]],
+      [48, ["🌫️", "雾凇"]],
+      [51, ["🌦️", "小毛毛雨"]],
+      [53, ["🌦️", "毛毛雨"]],
+      [55, ["🌧️", "较强毛毛雨"]],
+      [61, ["🌦️", "小雨"]],
+      [63, ["🌧️", "中雨"]],
+      [65, ["🌧️", "大雨"]],
+      [80, ["🌦️", "阵雨"]],
+      [81, ["🌧️", "较强阵雨"]],
+      [82, ["⛈️", "强阵雨"]],
+      [95, ["⛈️", "雷阵雨"]],
+      [96, ["⛈️", "雷雨伴冰雹"]],
+      [99, ["⛈️", "强雷雨伴冰雹"]]
+    ]);
+
+    const weekdayFormatter = new Intl.DateTimeFormat("zh-CN", { weekday: "short" });
+    const dateFormatter = new Intl.DateTimeFormat("zh-CN", { month: "numeric", day: "numeric" });
+    const timeFormatter = new Intl.DateTimeFormat("zh-CN", {
+      month: "numeric",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+
+    const forecastEl = document.querySelector("#forecast");
+    const summaryText = document.querySelector("#summaryText");
+    const updatedAt = document.querySelector("#updatedAt");
+    const sourceTag = document.querySelector("#sourceTag");
+    const footerNote = document.querySelector("#footerNote");
+
+    function weatherMeta(code, customText) {
+      const fallback = weatherMap.get(code) || ["⛅", "天气变化"];
+      return { icon: fallback[0], text: customText || fallback[1] };
+    }
+
+    function normalizeApiData(payload) {
+      return payload.daily.time.map((date, index) => ({
+        date,
+        code: payload.daily.weather_code[index],
+        high: Math.round(payload.daily.temperature_2m_max[index]),
+        low: Math.round(payload.daily.temperature_2m_min[index]),
+        rain: Math.round(payload.daily.precipitation_probability_max[index] || 0)
+      }));
+    }
+
+    function render(data, mode = "online") {
+      const today = data[0];
+      const hottest = data.reduce((max, day) => day.high > max.high ? day : max, today);
+      const wettest = data.reduce((max, day) => day.rain > max.rain ? day : max, today);
+      const todayMeta = weatherMeta(today.code, today.text);
+
+      document.querySelector("#nowTemp").textContent = `${today.high}°`;
+      document.querySelector("#nowDesc").textContent = todayMeta.text;
+      document.querySelector("#nowIcon").textContent = todayMeta.icon;
+      document.querySelector("#todayHigh").textContent = `${today.high}°C`;
+      document.querySelector("#todayLow").textContent = `${today.low}°C`;
+      document.querySelector("#todayRain").textContent = `${today.rain}%`;
+
+      const hotDate = new Date(`${hottest.date}T12:00:00`);
+      const wetDate = new Date(`${wettest.date}T12:00:00`);
+      summaryText.textContent = `未来 7 天最高约 ${hottest.high}°C，${dateFormatter.format(hotDate)} 较热；最高降水概率约 ${wettest.rain}%，集中在 ${dateFormatter.format(wetDate)} 前后。`;
+      updatedAt.textContent = `更新时间 ${timeFormatter.format(new Date())}`;
+      sourceTag.textContent = mode === "online" ? "在线天气" : "备用预报";
+      footerNote.textContent = mode === "online" ? "数据源：Open-Meteo，温度单位：摄氏度。" : "当前使用页面内置备用预报，联网后会自动刷新。";
+
+      forecastEl.innerHTML = data.map(day => {
+        const date = new Date(`${day.date}T12:00:00`);
+        const meta = weatherMeta(day.code, day.text);
+        const rainWidth = Math.max(4, Math.min(day.rain, 100));
+
+        return `
+          <article class="forecast-card">
+            <div>
+              <div class="day">
+                <div>
+                  <p class="day-name">${weekdayFormatter.format(date)}</p>
+                  <p class="date">${dateFormatter.format(date)}</p>
+                </div>
+                <span class="mini-icon" aria-hidden="true">${meta.icon}</span>
+              </div>
+              <div class="temps">
+                <span class="high">${day.high}°</span>
+                <span class="low">/ ${day.low}°</span>
+              </div>
+              <p class="desc">${meta.text}</p>
+            </div>
+            <div class="rain-row">
+              <div class="rain-label">
+                <span>降水概率</span>
+                <span>${day.rain}%</span>
+              </div>
+              <div class="bar" aria-hidden="true"><span style="width: ${rainWidth}%"></span></div>
+            </div>
+          </article>
+        `;
+      }).join("");
+      forecastEl.classList.remove("loading");
+    }
+
+    async function loadWeather() {
+      const endpoint = new URL("https://api.open-meteo.com/v1/forecast");
+      endpoint.search = new URLSearchParams({
+        latitude: "30.67",
+        longitude: "104.06",
+        daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+        timezone: "Asia/Shanghai",
+        forecast_days: "7"
+      }).toString();
+
+      try {
+        const response = await fetch(endpoint);
+        if (!response.ok) throw new Error(`Weather request failed: ${response.status}`);
+        const payload = await response.json();
+        render(normalizeApiData(payload), "online");
+      } catch (error) {
+        console.warn(error);
+        render(fallbackForecast, "fallback");
+      }
+    }
+
+    render(fallbackForecast, "fallback");
+    loadWeather();
+  </script>
+</body>
+</html>
